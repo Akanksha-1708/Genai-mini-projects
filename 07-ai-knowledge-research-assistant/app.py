@@ -1,7 +1,16 @@
+from dotenv import load_dotenv
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import (
+    HuggingFaceEmbeddings,
+    HuggingFaceEndpoint,
+    ChatHuggingFace
+)
 from langchain_chroma import Chroma
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+load_dotenv()
 
 files = [
     "documents/genai_notes.txt",
@@ -22,7 +31,6 @@ splitter = RecursiveCharacterTextSplitter(
     chunk_size=500,
     chunk_overlap=50
 )
-
 chunks = splitter.split_documents(documents)
 
 print("=" * 70)
@@ -49,3 +57,74 @@ retriever = vector_store.as_retriever(
 
 print("\nKnowledge base created successfully!")
 print("Retriever is ready!")
+
+llm = HuggingFaceEndpoint(
+    repo_id="Qwen/Qwen2.5-7B-Instruct",
+    task="text-generation",
+    provider="featherless-ai",
+    max_new_tokens=500,
+    temperature=0.3
+)
+
+model = ChatHuggingFace(llm=llm)
+
+prompt = PromptTemplate(
+    input_variables=["context", "question"],
+    template="""
+You are a helpful AI knowledge assistant.
+Answer the user's question using ONLY the provided context.
+If the answer is not available in the context, say:
+"I don't have enough information in the knowledge base."
+Do not invent information.
+Context:
+{context}
+Question:
+{question}
+Answer:
+"""
+)
+
+parser = StrOutputParser()
+chain = prompt | model | parser
+
+def format_documents(documents):
+    return "\n\n".join(
+        document.page_content
+        for document in documents
+    )
+
+def answer_question(question):
+    relevant_documents = retriever.invoke(question)
+    context = format_documents(relevant_documents)
+    answer = chain.invoke(
+        {
+            "context": context,
+            "question": question
+        }
+    )
+    return answer
+
+def main():
+    print("\n" + "=" * 70)
+    print("AI KNOWLEDGE ASSISTANT")
+    print("=" * 70)
+    print("\nAsk questions about the knowledge base.")
+    print("Type 'exit' to quit.")
+    while True:
+        question = input("\nYou: ").strip()
+        if question.lower() == "exit":
+            print("\nGoodbye!")
+            break
+        if not question:
+            print("Please enter a question.")
+            continue
+        try:
+            print("\nSearching knowledge base...")
+            answer = answer_question(question)
+            print("\nAssistant:")
+            print(answer)
+        except Exception as error:
+            print(f"\nError: {error}")
+
+if __name__ == "__main__":
+    main()
