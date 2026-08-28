@@ -7,6 +7,7 @@ from langchain_huggingface import (
     ChatHuggingFace
 )
 from langchain_chroma import Chroma
+from langchain_tavily import TavilySearch
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -104,11 +105,18 @@ def answer_question(question):
     )
     return answer
 
+search_tool=TavilySearch(max_results=5)
+
+def web_search(query):
+    result=search_tool.invoke({"query":query})
+    return result
+
 def main():
     print("\n" + "=" * 70)
-    print("AI KNOWLEDGE ASSISTANT")
+    print("AI KNOWLEDGE & RESEARCH ASSISTANT")
     print("=" * 70)
     print("\nAsk questions about the knowledge base.")
+    print("Use 'search:' for web search.")
     print("Type 'exit' to quit.")
     while True:
         question = input("\nYou: ").strip()
@@ -118,6 +126,20 @@ def main():
         if not question:
             print("Please enter a question.")
             continue
+        if question.lower().startswith("search:"):
+            query=question[7:].strip()
+            if not query:
+                print("Please enter a search query.")
+                continue
+            try:
+                print("\nSearching the web...")
+                result=web_search(query)
+                print("\nSearch Results:")
+                print(result)
+            except Exception as error:
+                print(f"\nSearch Error:{error}")
+            continue
+
         try:
             print("\nSearching knowledge base...")
             answer = answer_question(question)

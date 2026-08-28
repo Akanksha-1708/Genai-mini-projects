@@ -5,3 +5,4 @@ langchain-chroma
 langchain-text-splitters
 sentence-transformers
 python-dotenv
+langchain-tavily
