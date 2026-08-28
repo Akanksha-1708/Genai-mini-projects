@@ -1,4 +1,4 @@
-# 🚀 GenAI Learning Journey   
+# 🚀 GenAI Project Suit
    
 This repository contains my Generative AI projects built while learning LangChain, Large Language Models (LLMs), and modern AI application development.   
    
